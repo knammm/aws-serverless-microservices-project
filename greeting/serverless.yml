@@ -1,0 +1,28 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: knamaws
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: greet
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  # region: ap-southeast-2
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /greet
+          method: get
+  anotherGreet:
+    handler: anotherGreet.anotherGreet
+    events:
+      - httpApi:
+          path: /greet
+          method: post
+
+# handler.hello => take the hello function from handler.js
