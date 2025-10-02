@@ -11,6 +11,7 @@ provider:
     REGION: ap-southeast-2
     BUCKET_NAME: jinas-category-images-bucket
     TABLE_NAME: Categories
+    SNS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:858650445768:CategoryCleanUpTopic
   iamRoleStatements:
     - Effect: 'Allow'
       Action:
@@ -23,6 +24,10 @@ provider:
         - 'dynamodb:DeleteItem'
         - 'dynamodb:Scan'
       Resource: 'arn:aws:dynamodb:ap-southeast-2:858650445768:table/Categories'
+    - Effect: 'Allow'
+      Action:
+        - 'sns:Publish'
+      Resource: 'arn:aws:sns:ap-southeast-2:858650445768:CategoryCleanUpTopic'
 
 resources:
   Resources:
@@ -41,6 +46,16 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.BUCKET_NAME}
+    CategoryCleanUpTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: CategoryCleanUpTopic
+    CategoryCleanUpSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: arn:aws:sns:ap-southeast-2:858650445768:CategoryCleanUpTopic
+        Protocol: email
+        Endpoint: nam.nguyenolkmphyaws@gmail.com
   
   # Uncomment to easily set up a custom domain. Read the docs for more details:
   # https://www.serverless.com/framework/docs/providers/aws/guide/domains
