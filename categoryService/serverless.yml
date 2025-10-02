@@ -20,6 +20,8 @@ provider:
       Action:
         - 'dynamodb:PutItem'
         - 'dynamodb:UpdateItem'
+        - 'dynamodb:DeleteItem'
+        - 'dynamodb:Scan'
       Resource: 'arn:aws:dynamodb:ap-southeast-2:858650445768:table/Categories'
 
 resources:
@@ -58,3 +60,10 @@ functions:
           bucket: ${self:provider.environment.BUCKET_NAME}
           event: s3:ObjectCreated:Put
           existing: true
+  cleanupCategory:
+    handler: handlers/cleanupCategory.cleanupCategory
+    events:
+      - schedule:
+          rate: rate(2 minutes)
+          enabled: true
+
