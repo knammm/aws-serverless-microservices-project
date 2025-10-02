@@ -1,0 +1,88 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: knamaws
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: productService
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  environment:
+    TABLE_NAME: Products
+    BUCKET_NAME: jinas-product-images
+    REGION: ap-southeast-2
+    SNS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:858650445768:ProductCleanUpTopic
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:PutObject'
+      Resource: arn:aws:s3:::jinas-product-images/*
+    - Effect: 'Allow'
+      Action:
+        - 'dynamodb:PutItem'
+        - 'dynamodb:Scan'
+        - 'dynamodb:UpdateItem'
+        - 'dynamodb:DeleteItem'
+      Resource: 'arn:aws:dynamodb:ap-southeast-2:858650445768:table/Products'
+    - Effect: 'Allow'
+      Action:
+        - 'sns:Publish'
+      Resource: 'arn:aws:sns:ap-southeast-2:858650445768:ProductCleanUpTopic'
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+
+resources:
+  Resources:
+    ProductsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Products
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    ProductImagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: jinas-product-images
+    ProductCleanUpTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ProductCleanUpTopic
+    CategoryCleanUpSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: arn:aws:sns:ap-southeast-2:858650445768:ProductCleanUpTopic
+        Protocol: email
+        Endpoint: nam.nguyenolkmphyaws@gmail.com
+    
+functions:
+  getUploadUrl:
+    handler: handlers/getUploadUrl.getUploadUrl
+    events:
+      - httpApi:
+          path: /upload-url
+          method: post
+  updateProductImage:
+    handler: handlers/updateProductImage.updateProductImage
+    events:
+      - s3:
+          bucket: jinas-product-images
+          event: s3:ObjectCreated:Put
+          existing: true
+  cleanUpProduct:
+    handler: handlers/cleanUpProduct.cleanUpProduct
+    events:
+      - schedule:
+          rate: rate(2 minutes)
+          enabled: true
+  getApprovedProduct:
+    handler: handlers/getApprovedProduct.getApprovedProduct
+    events:
+      - httpApi:
+          path: /approved-products
+          method: get
