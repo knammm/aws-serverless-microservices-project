@@ -1,0 +1,60 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: knamaws
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: categoryService
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  environment:
+    REGION: ap-southeast-2
+    BUCKET_NAME: jinas-category-images-bucket
+    TABLE_NAME: Categories
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:PutObject'
+      Resource: 'arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*'
+    - Effect: 'Allow'
+      Action:
+        - 'dynamodb:PutItem'
+        - 'dynamodb:UpdateItem'
+      Resource: 'arn:aws:dynamodb:ap-southeast-2:858650445768:table/Categories'
+
+resources:
+  Resources:
+    CategoryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: fileName
+            AttributeType: S
+        KeySchema:
+          - AttributeName: fileName
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    CategoryImagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.BUCKET_NAME}
+  
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+
+functions:
+  uploadCategory:
+    handler: handlers/uploadCategory.uploadCategory
+    events:
+      - httpApi:
+          path: /upload-category
+          method: post
+  updateCategoryImage:
+    handler: handlers/updateCategoryImage.updateCategoryImage
+    events:
+      - s3:
+          bucket: ${self:provider.environment.BUCKET_NAME}
+          event: s3:ObjectCreated:Put
+          existing: true
