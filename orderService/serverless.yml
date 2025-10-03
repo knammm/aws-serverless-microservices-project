@@ -1,0 +1,56 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: knamaws
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: orderService
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  httpApi:
+    authorizers:
+      myCognitoAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_54YPznyUv
+        audience:
+          - ${ssm:/CLIENT_ID}
+  environment:
+    TABLE_NAME: Orders
+    BUCKET_NAME: jinas-order-service-bucket
+    REGION: ap-southeast-2
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 'dynamoDB:PutItem'
+      Resource: arn:aws:dynamodb:ap-southeast-2:858650445768:table/Orders
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+
+resources:
+  Resources:
+    OrdersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    OrderServiceS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.BUCKET_NAME}
+
+functions:
+  placeOrder:
+    handler: handlers/placeOrder.placeOrder
+    events:
+      - httpApi:
+          path: /
+          method: post
+          authorizer:
+            name: myCognitoAuthorizer
