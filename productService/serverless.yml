@@ -7,6 +7,13 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: ap-southeast-2
+  httpApi:
+    authorizers:
+      myCognitoAuth:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_54YPznyUv
+        audience:
+          - ${ssm:/CLIENT_ID}
   environment:
     TABLE_NAME: Products
     BUCKET_NAME: jinas-product-images
@@ -67,6 +74,8 @@ functions:
       - httpApi:
           path: /upload-url
           method: post
+          authorizer:
+            name: myCognitoAuth
   updateProductImage:
     handler: handlers/updateProductImage.updateProductImage
     events:
