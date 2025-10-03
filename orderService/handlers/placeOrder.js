@@ -1,10 +1,11 @@
-const { DynamoDBClient, PutItemCommand } = require ('@aws-sdk/client-dynamodb');
 const {v4: uuid} = require('uuid');
+const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs');
 
 // This is to communicate with GET request to fetch product details
 const axios = require('axios');
 
-const dynamoDBClient = new DynamoDBClient({region: process.env.REGION});
+// const dynamoDBClient = new DynamoDBClient({region: process.env.REGION});
+const sqsClient = new SQSClient({region: process.env.REGION});
 
 exports.placeOrder = async (event) => {
     try {
@@ -43,22 +44,25 @@ exports.placeOrder = async (event) => {
         }
 
         const orderId = uuid();
-        const params = {
-            TableName: process.env.TABLE_NAME,
-            Item: {
-                id: { S: orderId },
-                productId: { S: id },
-                productName: { S: product.productName.S },
-                productPrice: { N: product.productPrice.N },
-                quantity: { N: quantity.toString() },
-                email: { S: email },
-                status: { S: 'PENDING' },
-                createdAt: { S: new Date().toISOString() },
-            }
+
+        const messageBody = {
+            orderId,
+            productId: id,
+            productName: product.productName.S,
+            productPrice: product.productPrice.N,
+            quantity,
+            email,
+            status: 'PENDING',
+            createdAt: new Date().toISOString(),
         }
 
-        const putCommand = new PutItemCommand(params);
-        await dynamoDBClient.send(putCommand);
+        // Send message to SQS
+        const sendMessageCommand = new SendMessageCommand({
+            QueueUrl: process.env.SQS_QUEUE_URL,
+            MessageBody: JSON.stringify(messageBody),
+        });
+
+        await sqsClient.send(sendMessageCommand);
 
         return {
             statusCode: 201,

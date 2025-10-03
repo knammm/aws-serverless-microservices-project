@@ -18,11 +18,17 @@ provider:
     TABLE_NAME: Orders
     BUCKET_NAME: jinas-order-service-bucket
     REGION: ap-southeast-2
+    SQS_QUEUE_URL: https://sqs.ap-southeast-2.amazonaws.com/858650445768/OrderQueue
   iamRoleStatements:
     - Effect: 'Allow'
       Action:
         - 'dynamoDB:PutItem'
-      Resource: arn:aws:dynamodb:ap-southeast-2:858650445768:table/Orders
+        - 'sqs:SendMessage'
+        - 'sqs:ReceiveMessage'
+        - 'sqs:DeleteMessage'
+      Resource: 
+        - arn:aws:sqs:ap-southeast-2:858650445768:OrderQueue
+        - arn:aws:dynamodb:ap-southeast-2:858650445768:table/Orders
   # Uncomment to easily set up a custom domain. Read the docs for more details:
   # https://www.serverless.com/framework/docs/providers/aws/guide/domains
   # domain: api.example.com
@@ -44,6 +50,10 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.BUCKET_NAME}
+    OrderQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: OrderQueue
 
 functions:
   placeOrder:
@@ -54,3 +64,9 @@ functions:
           method: post
           authorizer:
             name: myCognitoAuthorizer
+  processOrder:
+    handler: handlers/processOrder.processOrder
+    events:
+      - sqs:
+          arn: arn:aws:sqs:ap-southeast-2:858650445768:OrderQueue
+
