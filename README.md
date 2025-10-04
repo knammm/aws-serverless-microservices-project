@@ -1,6 +1,6 @@
 # Project Serverless Store: A Developer's Microservices Saga 🚀
 
-> In a world dominated by monolithic giants, a new architecture was foretold—one of speed, resilience, and infinite scale. This repository is the chronicle of a quest to build that architecture: a fully serverless, multi-store eCommerce platform forged in the AWS cloud.
+> In a world dominated by monolithic giants, a new architecture was foretold-one of speed, resilience, and infinite scale. This repository is the chronicle of a quest to build that architecture: a fully serverless, multi-store eCommerce platform forged in the AWS cloud.
 
 ---
 
